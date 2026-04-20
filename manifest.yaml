@@ -1,0 +1,77 @@
+# ==============================================================================
+# CONCEPT CLÉ : Recréation automatique & Résilience
+# Le contrôleur "Deployment" surveille continuellement l'état des Pods. Si un
+# nœud physique ou un pod plante, K8s détecte que l'état réel (2 pods) ne
+# correspond plus à l'état souhaité (replicas: 3) et recrée immédiatement un 
+# pod pour compenser la perte.
+#
+# CONCEPT CLÉ : strategy / RollingUpdate
+# Lors du passage à une v2 de l'image, Kubernetes remplace les pods progressivement.
+# "maxUnavailable: 1" signifie qu'un seul pod au maximum peut être indisponible 
+# pendant la mise à jour, garantissant le fameux "Zero-Downtime Deployment".
+# ==============================================================================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: app-tp1-deployment
+  labels:
+    app: backend-tp1
+spec:
+  replicas: 3
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1       # Nombre max de pods créés en plus de la capacité désirée
+      maxUnavailable: 1 # Nombre max de pods inaccessibles pendant l'update
+  selector:
+    matchLabels:
+      app: backend-tp1
+  template:
+    metadata:
+      labels:
+        app: backend-tp1
+    spec:
+      serviceAccountName: app-tp1-sa # Utilisation du RBAC défini à l'étape 4
+      containers:
+      - name: web-app
+        image: mon-app-tp1:v1
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 8080
+        # Variables d'environnement injectées de façon sécurisée via le Secret
+        envFrom:
+        - secretRef:
+            name: app-tp1-secret
+        # ReadinessProbe : Indique au Service si le pod est prêt à recevoir du trafic réseau
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 8080
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        # LivenessProbe : Rédemarre le conteneur s'il entre dans un état de blocage/deadlock
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 8080
+          initialDelaySeconds: 15
+          periodSeconds: 20
+---
+# ==============================================================================
+# SERVICE KUBERNETES : Abstraction du réseau
+# Le Service route le trafic entrant de manière équilibrée (load balancing)
+# vers les Pods sains (ceux passant la readinessProbe).
+# ==============================================================================
+apiVersion: v1
+kind: Service
+metadata:
+  name: app-tp1-svc
+  labels:
+    app: backend-tp1
+spec:
+  type: ClusterIP # Restreint l'accès à l'intérieur du cluster (sécurité standard)
+  selector:
+    app: backend-tp1
+  ports:
+  - port: 80
+    targetPort: 8080

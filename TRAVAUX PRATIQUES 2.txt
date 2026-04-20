@@ -1,0 +1,69 @@
+TRAVAUX PRATIQUES 2 
+Déploiement automatisé, orchestration et 
+sécurité Kubernetes 
+ 
+  Couvre : 
+ Kubernetes (base + avancé) 
+ Rolling update / rollback 
+ Scaling 
+ Ansible 
+ Terraform 
+ RBAC 
+ Gestion des secrets 
+Outils utilisés : 
+Kubernetes 
+Ansible 
+Terraform 
+ 
+  Objectif  
+Passer de : 
+Image Docker prête 
+à 
+Infrastructure automatisée + application résiliente + sécurité minimale 
+Ils doivent comprendre que : 
+Docker seul ne suffit pas. 
+Il faut orchestration + automatisation + sécurité. 
+ 
+  Contexte 
+On réutilise l’image créée au TP1. 
+Déroulement  
+1️⃣   Étape 1 – Terraform  
+Créer un script simple : 
+ Déclaration d’une VM locale simulée (ou environnement local type minikube) 
+ terraform init 
+ terraform plan 
+ terraform apply 
+Concept important : 
+État souhaité vs état réel 
+2️⃣    Étape 2 – Déploiement Kubernetes  
+Créer : 
+ Deployment (3 replicas) 
+ Service 
+ Readiness / Liveness probe 
+Tester : 
+ Suppression d’un pod → recréation automatique 
+ Mise à jour image → rolling update 
+ Rollback si erreur 
+Mobilisation directe du chapitre Kubernetes avancé. 
+3️⃣   Étape 3 – Automatisation Ansible  
+Créer un playbook : 
+ Installer Docker 
+ Installer kubectl 
+ Appliquer manifest Kubernetes 
+Notion clé : 
+Idempotence. 
+4️⃣    Étape 4 – Sécurité Kubernetes  
+Implémenter : 
+ Role 
+ RoleBinding 
+ ServiceAccount 
+ Secret 
+Objectif : 
+Montrer le principe du moindre privilège. 
+ 
+  Livrables TP2 
+ Script Terraform 
+ Manifest Kubernetes 
+ Playbook Ansible 
+ Fichier RBAC 
+ Capture test scaling + rollback 

@@ -1,0 +1,52 @@
+# ==============================================================================
+# CONCEPT CLÉ : Idempotence 
+# Dans ce script, si Docker ou kubectl sont déjà installés, Ansible ne signalera
+# aucun changement ('ok' vs 'changed') et ne cassera pas l'existant.
+# Appliquer un script idempotent 100 fois donnera exactement le même résultat
+# que de l'appliquer 1 seule fois, sans aucun effet de bord indésirable.
+# ==============================================================================
+- name: Automatisation du déploiement de l'environnement TP DevOps
+  hosts: localhost
+  connection: local
+  become: yes # Exécution avec privilèges sudo (requis pour la gestion des paquets)
+  tasks:
+
+    - name: "IDEMPOTENCE : Installer les pré-requis systèmes système (apt/yum)"
+      ansible.builtin.apt:
+        name: 
+          - apt-transport-https
+          - ca-certificates
+          - curl
+          - python3-kubernetes # Requis par le module ansible kubernetes.core.k8s
+        state: present
+        update_cache: yes
+
+    - name: "IDEMPOTENCE : Vérifier et installer Docker si nécessaire"
+      ansible.builtin.apt:
+        name: docker.io
+        state: present
+
+    - name: "Démarrer et activer le service Docker"
+      ansible.builtin.systemd:
+        name: docker
+        state: started
+        enabled: yes
+
+    - name: "IDEMPOTENCE : Installer Kubectl"
+      ansible.builtin.get_url:
+        url: "https://dl.k8s.io/release/v1.28.0/bin/linux/amd64/kubectl"
+        dest: /usr/local/bin/kubectl
+        mode: '0755'
+
+    - name: "Déployer les configurations de sécurité et le Secret K8s"
+      kubernetes.core.k8s:
+        state: present
+        src: "{{ playbook_dir }}/rbac-secret.yaml"
+      become: no
+
+    - name: "Déployer l'application principale (Deployment + Service K8s)"
+      kubernetes.core.k8s:
+        state: present
+        src: "{{ playbook_dir }}/manifest.yaml"
+      become: no
+      become: no
